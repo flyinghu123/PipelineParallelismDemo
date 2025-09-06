@@ -16,7 +16,7 @@ class ForwardOp(Op):
 
 @dataclass(kw_only=True)
 class BackwardOp(Op):
-    dur: float = 2.0
+    dur: float = 1.0
     mem: float = -1.0
     color: str = '#E69138'
 
@@ -74,11 +74,11 @@ for stage_id in range(pp_size):
         if stage_id != pp_size - 1:
             # send forward
             scheduler.add_op(stage_id, SendRecvOp(src=stage_id, dst=stage_id+1))
+            # 延迟实现对称1f1b
+            scheduler.add_op(stage_id, Op(dur=BackwardOp.dur, is_pad=True))
     if num_microbatches_remaining > 0 and stage_id != 0:
         # recv forward
         scheduler.add_op(stage_id, SendRecvOp(src=stage_id-1, dst=stage_id))
-    # 推迟forward, 使得图像1f1b的第一个F在B前一刻
-    # scheduler.add_op(stage_id, Op(dur=BackwardOp.dur * (pp_size-1-stage_id), is_pad=True))
     # 1f1b
     for i in range(num_microbatches_remaining):
         last_iteration = i == (num_microbatches_remaining - 1)
