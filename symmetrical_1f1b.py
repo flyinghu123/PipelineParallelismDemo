@@ -28,7 +28,7 @@ class SendRecvOp(P2P):
     
 
 # 奇偶通信策略
-def _p2p_ops(stage_id, send_prev: bool = False, recv_prev: bool = False, send_next: bool = False, recv_next: bool = False):
+def _p2p_ops(send_prev: bool = False, recv_prev: bool = False, send_next: bool = False, recv_next: bool = False):
     if stage_id % 2 == 0:
         if send_next:
             scheduler.add_op(stage_id, SendRecvOp(src=stage_id, dst=stage_id+1))
@@ -49,15 +49,15 @@ def _p2p_ops(stage_id, send_prev: bool = False, recv_prev: bool = False, send_ne
             scheduler.add_op(stage_id, SendRecvOp(src=stage_id, dst=stage_id-1))
 
 
-def send_forward_recv_backward(stage_id):
+def send_forward_recv_backward():
     if stage_id == pp_size - 1:
         return
-    _p2p_ops(stage_id, send_next=True, recv_next=True)
+    _p2p_ops(send_next=True, recv_next=True)
 
-def send_backward_recv_forward(stage_id):
+def send_backward_recv_forward():
     if stage_id == 0:
         return
-    _p2p_ops(stage_id, send_prev=True, recv_prev=True)
+    _p2p_ops(send_prev=True, recv_prev=True)
     
     
 for stage_id in range(pp_size):
@@ -85,7 +85,7 @@ for stage_id in range(pp_size):
         # forward
         scheduler.add_op(stage_id, ForwardOp(text=f'F{i+num_warmup_microbatches}'))
         # send forward + recv backward
-        send_forward_recv_backward(stage_id)
+        send_forward_recv_backward()
         # backward
         scheduler.add_op(stage_id, BackwardOp(text=f'B{i}'))
         if last_iteration:
@@ -94,7 +94,7 @@ for stage_id in range(pp_size):
                 scheduler.add_op(stage_id, SendRecvOp(src=stage_id, dst=stage_id-1))
         else:
             # send backward + recv forward
-            send_backward_recv_forward(stage_id)
+            send_backward_recv_forward()
         
     # cooldown:
     for i in range(num_warmup_microbatches):
@@ -106,4 +106,4 @@ for stage_id in range(pp_size):
         if stage_id != 0:
             # send backward
             scheduler.add_op(stage_id, SendRecvOp(src=stage_id, dst=stage_id-1))
-scheduler.run_matplotlib()
+scheduler.run_matplotlib(legends=[('Forward', ForwardOp.color), ('Backward', BackwardOp.color), ('SendRecv', SendRecvOp.color)])

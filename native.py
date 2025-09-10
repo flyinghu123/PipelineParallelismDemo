@@ -44,4 +44,4 @@ for stage_id in range(pp_size):
     if stage_id != 0:
         # send backward
         scheduler.add_op(stage_id, SendRecvOp(src=stage_id, dst=stage_id-1))
-scheduler.run_matplotlib()
+scheduler.run_matplotlib(legends=[('Forward', ForwardOp.color), ('Backward', BackwardOp.color), ('SendRecv', SendRecvOp.color)])

@@ -1,8 +1,7 @@
 from dataclasses import dataclass, field, asdict, astuple
 import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.ticker import MaxNLocator
-
+import matplotlib.patches as mpatches
+from matplotlib.legend_handler import HandlerPatch
 
 @dataclass
 class Op:
@@ -117,7 +116,7 @@ class Scheduler:
             print('\n'.join([f'Device {device_id}: {output}' for device_id, output in outputs.items()]))
             print(f'Schedule Bubble Rate: {1 - sum([device.compute_total_time for device in self.devices]) / max([device.cur_ts for device in self.devices]) / len(self.devices):.2%}, Max Allocated Mem: {", ".join([f"{max([mem for ts, mem in device.mem_history]):.2f}" for device in self.devices])}')
 
-    def run_matplotlib(self, show_text: bool = True):
+    def run_matplotlib(self, show_text: bool = True, legends: list[tuple[str, str]] = None):
         self.run(log=True)
         fig, ax = plt.subplots(dpi=100)
         fig.canvas.manager.window.state('zoomed')
@@ -154,7 +153,17 @@ class Scheduler:
         ax.set_yticks(filtered_yticks)
         ax.set_yticklabels(filtered_yticklabels)
         ax.set_aspect(1)
-        plt.legend(loc='upper left')
+        # plt.legend(loc='upper left')
+        current_handles, current_labels = ax.get_legend_handles_labels()
+        if legends is not None:
+            for label, color in legends:
+                current_handles.append(mpatches.Patch(color=color, label=label))
+                current_labels.append(label)
+        plt.legend(handles=current_handles, labels=current_labels, 
+                    loc='center', 
+                    bbox_to_anchor=(0.8, -0.2), 
+                    ncol=4,
+                    frameon=False)
         plt.show()
 
 
